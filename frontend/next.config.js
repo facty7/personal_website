@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['your-username-spaces.hf.space'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '7860',
+        pathname: '/**',
+      },
+    ],
   },
-  // For development with backend on different port
   async rewrites() {
     return [
       {

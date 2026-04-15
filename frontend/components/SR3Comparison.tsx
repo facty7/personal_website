@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { processSR3, downloadSR3Image, APIError } from '@/lib/api';
+import { processSR3, APIError } from '@/lib/api';
 
 interface SR3ComparisonProps {
   className?: string;
@@ -55,16 +55,8 @@ export default function SR3Comparison({ className = '' }: SR3ComparisonProps) {
 
       if (result.status === 'success' && result.image_url) {
         const imageUrl = result.image_url;
-        // Check if the URL is a data URL or absolute URL
-        if (imageUrl.startsWith('data:') || imageUrl.startsWith('http')) {
-          // Directly use the URL
-          setEnhancedImageUrl(imageUrl);
-        } else {
-          // Fallback: download via fetch (assuming it's a relative URL)
-          const blob = await downloadSR3Image(imageUrl);
-          const enhancedUrl = URL.createObjectURL(blob);
-          setEnhancedImageUrl(enhancedUrl);
-        }
+        // URL is relative (proxied via Next.js rewrites), use directly
+        setEnhancedImageUrl(imageUrl);
         setSuccess(result.message || 'Image enhanced successfully');
       } else {
         throw new Error(result.message || 'Unknown error');

@@ -61,7 +61,7 @@ export default function GsplatViewer({
             if (mounted) setProgress(Math.round(p * 100));
           }
         );
-
+        // @ts-ignore
         scene.add(splat);
 
         let angle = 0;

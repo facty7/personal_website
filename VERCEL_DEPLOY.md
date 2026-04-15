@@ -81,11 +81,10 @@ git push -u origin main
 
 | Key | Value | 说明 |
 |-----|-------|------|
-| `NEXT_PUBLIC_BACKEND_URL` | `http://你的内网穿透地址` | 后端 API 地址，见下方说明 |
+| `NEXT_PUBLIC_BACKEND_URL` | `https://xxx.ngrok-free.app` 或你的穿透地址 | 后端 API 的公网地址 |
 
-> **重要**: `NEXT_PUBLIC_BACKEND_URL` 必须指向你的后端服务。
-> - 如果你用 WSL + 内网穿透（如 frp、ngrok），填入穿透后的公网地址，例如 `https://xxx.ngrok-free.app`
-> - 如果后端部署在同一台 Vercel 上（不推荐，Vercel 不支持长时间运行的 Python 服务），则不适用
+> **重要**: Vercel 使用 Next.js rewrites 自动代理 `/api/*` 请求到你的后端。
+> `NEXT_PUBLIC_BACKEND_URL` 会在构建时注入到 rewrites 配置中。
 
 ### 第 5 步：部署
 

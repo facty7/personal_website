@@ -16,18 +16,15 @@ export default function GsplatViewer({
   showControls = true,
 }: GsplatViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rendererRef = useRef<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Initialize gsplat renderer
   useEffect(() => {
     if (!canvasRef.current || !plyUrl) return;
 
     let mounted = true;
-    let renderer: any = null;
 
     const initGsplat = async () => {
       try {
@@ -35,28 +32,21 @@ export default function GsplatViewer({
         setError(null);
         setProgress(0);
 
-        // Check WebGL support
         const canvas = canvasRef.current;
         if (!canvas) return;
 
         const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
         if (!gl) {
-          throw new Error('WebGL is not supported in your browser. Please try a modern browser like Chrome or Firefox.');
+          throw new Error('WebGL is not supported in your browser.');
         }
 
-        // Dynamically import gsplat library
         const gsplat = await import('gsplat');
 
-        // Create renderer
-        renderer = new gsplat.WebGLRenderer(canvasRef.current!);
-        rendererRef.current = renderer;
-
-        // Create scene and camera
+        const renderer = new gsplat.WebGLRenderer(canvasRef.current!);
         const scene = new gsplat.Scene();
         const camera = new gsplat.Camera();
-        camera.position.set(0, 0, 5);
+        camera.position = new gsplat.Vector3(0, 0, 5);
 
-        // Add orbit controls if showControls is true
         let controls: any = null;
         if (showControls) {
           controls = new gsplat.OrbitControls(camera, canvasRef.current!);
@@ -64,27 +54,28 @@ export default function GsplatViewer({
           controls.dampingFactor = 0.05;
         }
 
-        // Load PLY file from URL
-        const splat = await gsplat.loadFile(plyUrl, (loaded, total) => {
-          if (mounted) {
-            const percent = Math.round((loaded / total) * 100);
-            setProgress(percent);
+        const splat = await gsplat.Loader.LoadAsync(
+          plyUrl,
+          scene,
+          (p: number) => {
+            if (mounted) setProgress(Math.round(p * 100));
           }
-        });
+        );
 
         scene.add(splat);
 
-        // Auto-rotate if enabled
-        if (autoRotate && !showControls) {
-          splat.rotation = [0, Math.PI / 4, 0];
-        }
-
-        // Render loop
+        let angle = 0;
         const animate = () => {
           if (!mounted) return;
 
           if (autoRotate && !showControls) {
-            splat.rotation[1] += 0.005;
+            angle += 0.005;
+            const radius = 5;
+            camera.position = new gsplat.Vector3(
+              Math.sin(angle) * radius,
+              0,
+              Math.cos(angle) * radius
+            );
           }
 
           if (showControls && controls) {
@@ -112,21 +103,14 @@ export default function GsplatViewer({
 
     initGsplat();
 
-    // Cleanup
     return () => {
       mounted = false;
-      if (rendererRef.current) {
-        // Clean up WebGL resources
-        rendererRef.current.dispose();
-        rendererRef.current = null;
-      }
     };
   }, [plyUrl, autoRotate, showControls]);
 
-  // Handle canvas resize
   useEffect(() => {
     const handleResize = () => {
-      if (canvasRef.current && rendererRef.current) {
+      if (canvasRef.current) {
         const canvas = canvasRef.current;
         const parent = canvas.parentElement;
         if (parent) {

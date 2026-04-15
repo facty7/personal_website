@@ -54,7 +54,7 @@ export default function GsplatViewer({
         // Create scene and camera
         const scene = new gsplat.Scene();
         const camera = new gsplat.Camera();
-        camera.position = [0, 0, 5];
+        camera.position.set(0, 0, 5);
 
         // Add orbit controls if showControls is true
         let controls: any = null;

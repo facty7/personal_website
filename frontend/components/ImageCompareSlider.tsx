@@ -104,6 +104,7 @@ export function ImageCompareSlider({
         draggable={false}
         onLoad={() => setImagesLoaded(prev => ({ ...prev, after: true }))}
         onError={() => setImagesLoaded(prev => ({ ...prev, after: true }))}
+        style={{ opacity: imagesLoaded.after ? 1 : 0 }}
       />
 
       {/* Before image (clipped to left portion) */}
@@ -118,6 +119,7 @@ export function ImageCompareSlider({
           draggable={false}
           onLoad={() => setImagesLoaded(prev => ({ ...prev, before: true }))}
           onError={() => setImagesLoaded(prev => ({ ...prev, before: true }))}
+          style={{ opacity: imagesLoaded.before ? 1 : 0 }}
         />
       </div>
 

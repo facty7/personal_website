@@ -16,11 +16,15 @@ const nextConfig = {
     ],
   },
   async rewrites() {
+    const backend = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.jianglixin.online';
     return [
       {
         source: '/api/:path*',
-        // 确保环境变量优先级最高，默认指向 CF Tunnel
-        destination: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.jianglixin.online'}/api/:path*`,
+        destination: `${backend}/api/:path*`,
+      },
+      {
+        source: '/outputs/:path*',
+        destination: `${backend}/outputs/:path*`,
       },
     ];
   },

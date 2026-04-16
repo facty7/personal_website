@@ -253,7 +253,11 @@ export async function downloadProcessedFile(
 ): Promise<void> {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Download failed: ${response.statusText}`);
+    throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+  }
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.startsWith('image/') && !contentType.startsWith('application/')) {
+    throw new Error(`Download failed: unexpected content type "${contentType}"`);
   }
   const blob = await response.blob();
   const blobUrl = window.URL.createObjectURL(blob);

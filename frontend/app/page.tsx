@@ -4,56 +4,46 @@ import { useState } from 'react';
 import { process3DGS, APIError } from '@/lib/api';
 import GsplatViewer from '@/components/GsplatViewer';
 import SR3Comparison from '@/components/SR3Comparison';
+import { TechDocs } from '@/components/TechDocs';
+import { toast } from '@/hooks/useToast';
+import { useI18n } from '@/lib/i18n';
 
 export default function Home() {
+  const { t } = useI18n();
   const [threedgsImages, setThreedgsImages] = useState<File[]>([]);
-  const [threedgsResult, setThreedgsResult] = useState<string | null>(null);
   const [threedgsLoading, setThreedgsLoading] = useState(false);
-  const [threedgsError, setThreedgsError] = useState<string | null>(null);
   const [plyUrl, setPlyUrl] = useState<string | null>(null);
-  const [taskId, setTaskId] = useState<string | null>(null);
 
   const handleThreedgsImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       setThreedgsImages(files);
-      setThreedgsError(null);
       setPlyUrl(null);
-      setTaskId(null);
     }
   };
 
-
   const handleThreedgsSubmit = async () => {
     if (threedgsImages.length === 0) {
-      setThreedgsError('Please select at least one image');
+      toast.error(t('pleaseSelectImages'));
       return;
     }
 
     setThreedgsLoading(true);
-    setThreedgsError(null);
-    setThreedgsResult(null);
     setPlyUrl(null);
-    setTaskId(null);
 
     try {
       const result = await process3DGS(threedgsImages);
-      // The new API returns a download_url if processing is synchronous
       if (result.download_url) {
         setPlyUrl(result.download_url);
-        setThreedgsResult(`3DGS processing completed: ${result.message}`);
+        toast.success(result.message);
       } else {
-        setThreedgsResult(`3DGS processing started: ${result.message}`);
-        // If there's a task_id, store it for polling (though not used currently)
-        if (result.task_id) {
-          setTaskId(result.task_id);
-        }
+        toast.info(result.message || '3DGS processing started');
       }
     } catch (error) {
       if (error instanceof APIError) {
-        setThreedgsError(`API Error (${error.statusCode}): ${error.message}`);
+        toast.error(`API Error (${error.statusCode}): ${error.message}`);
       } else {
-        setThreedgsError(`Error: ${(error as Error).message}`);
+        toast.error(`Error: ${(error as Error).message}`);
       }
     } finally {
       setThreedgsLoading(false);
@@ -62,188 +52,182 @@ export default function Home() {
 
   const handleReset3DGS = () => {
     setThreedgsImages([]);
-    setThreedgsResult(null);
-    setThreedgsError(null);
     setPlyUrl(null);
-    setTaskId(null);
   };
 
   return (
-    <div className="space-y-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">SR3 & 3DGS Processing</h1>
-        <p className="text-gray-600">Upload images for super-resolution or 3D reconstruction</p>
-        <p className="text-sm text-gray-500 mt-2">
-          Backend URL: {process.env.NEXT_PUBLIC_BACKEND_URL || 'Not configured'}
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Hero */}
+      <div className="glass rounded-lg p-8 text-center animate-fade-in">
+        <h1 className="text-3xl md:text-4xl font-bold text-zinc-100 mb-2">
+          {t('heroTitle')}
+        </h1>
+        <p className="text-zinc-400 max-w-2xl mx-auto">
+          {t('heroDescription')}
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* SR3 Section */}
-        <div className="border rounded-lg shadow bg-white">
+      {/* Bento Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* SR3 Card - spans 2 cols */}
+        <div className="md:col-span-2 animate-fade-in">
           <SR3Comparison />
         </div>
 
-        {/* 3DGS Section */}
-        <div className="border rounded-lg p-6 shadow">
-          <h2 className="text-2xl font-bold mb-4">3DGS 3D Reconstruction</h2>
-          <p className="text-gray-600 mb-4">
-            Upload multiple images of an object/scene to generate a 3D point cloud (.ply file).
-          </p>
+        {/* 3DGS Card - spans 2 cols */}
+        <div className="md:col-span-2 glass rounded-lg glow-purple animate-fade-in">
+          <div className="p-5">
+            <h2 className="text-lg font-bold text-zinc-100 mb-1">{t('gsTitle')}</h2>
+            <p className="text-sm text-zinc-400 mb-5">{t('gsDesc')}</p>
 
-          <div className="mb-4">
-            <label className="block mb-2 font-medium">Select Images (Multiple)</label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleThreedgsImagesChange}
-              className="w-full p-2 border rounded"
-              disabled={threedgsLoading}
-            />
-            {threedgsImages.length > 0 && (
-              <p className="mt-2 text-sm text-gray-500">
-                Selected {threedgsImages.length} image(s)
-              </p>
-            )}
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleThreedgsSubmit}
-              disabled={threedgsLoading || threedgsImages.length === 0}
-              className="flex-1 bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 disabled:bg-purple-300"
-            >
-              {threedgsLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : 'Process with 3DGS'}
-            </button>
-            <button
-              onClick={handleReset3DGS}
-              disabled={threedgsLoading}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 disabled:opacity-50"
-            >
-              Reset
-            </button>
-          </div>
-
-          {threedgsError && (
-            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded">
-              <strong>Error:</strong> {threedgsError}
-            </div>
-          )}
-
-          {threedgsResult && (
-            <div className="mt-4 p-3 bg-green-100 text-green-700 rounded">
-              <strong>Success:</strong> {threedgsResult}
-            </div>
-          )}
-
-          {/* 3D Preview */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3">3D Gaussian Splatting Preview</h3>
-
-            {plyUrl ? (
-              <div className="space-y-4">
-                <div className="text-sm text-gray-600 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Loaded: {plyUrl.split('/').pop()}</span>
-                  </div>
-                  <button
-                    onClick={() => window.open(plyUrl, '_blank')}
-                    className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    Open .ply
-                  </button>
-                </div>
-
-                <div className="border rounded-lg overflow-hidden">
-                  <GsplatViewer
-                    plyUrl={plyUrl}
-                    className="h-96"
-                    autoRotate={true}
-                    showControls={true}
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = plyUrl;
-                      link.download = plyUrl.split('/').pop() || 'model.ply';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 flex items-center justify-center"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download .ply
-                  </button>
-                  <button
-                    onClick={() => setPlyUrl(null)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-                  >
-                    Hide Preview
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-medium text-gray-700 mb-2">No 3D Model Loaded</h4>
-                <p className="text-gray-500 mb-4">
-                  Process images with 3DGS to generate and preview a 3D Gaussian Splatting model.
+            {/* Upload */}
+            <div className="mb-4">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleThreedgsImagesChange}
+                className="w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700 file:transition-colors"
+                disabled={threedgsLoading}
+              />
+              {threedgsImages.length > 0 && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  {t('selectedImages', threedgsImages.length)}
                 </p>
-                <div className="text-sm text-gray-400">
-                  <p>The preview will appear here once processing is complete.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+              )}
+            </div>
 
-      <div className="mt-8 border-t pt-6">
-        <h3 className="text-xl font-bold mb-3">API Documentation</h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-gray-50 p-4 rounded">
-            <h4 className="font-bold">SR3 Endpoint (Gradio)</h4>
-            <code className="text-sm block mt-2">POST /api/predict/sr_process</code>
-            <p className="text-sm text-gray-600 mt-1">
-              Input: Single image file via Gradio client
-            </p>
+            {/* Buttons */}
+            <div className="flex gap-3 mb-4">
+              <button
+                onClick={handleThreedgsSubmit}
+                disabled={threedgsLoading || threedgsImages.length === 0}
+                className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-500 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                {threedgsLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {t('processing')}
+                  </span>
+                ) : t('processWith3DGS')}
+              </button>
+              <button
+                onClick={handleReset3DGS}
+                disabled={threedgsLoading}
+                className="px-4 py-2 border border-zinc-700 text-zinc-400 rounded-lg hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-50 transition-colors"
+              >
+                {t('reset')}
+              </button>
+            </div>
+
+            {/* 3D Preview */}
+            <div className="mt-4">
+              {plyUrl ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-zinc-500">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                      <span>{plyUrl.split('/').pop()}</span>
+                    </div>
+                    <a
+                      href={plyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Open .ply
+                    </a>
+                  </div>
+
+                  <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                    <GsplatViewer
+                      plyUrl={plyUrl}
+                      className="h-80"
+                      autoRotate={true}
+                      showControls={true}
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = plyUrl;
+                        link.download = plyUrl.split('/').pop() || 'model.ply';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center justify-center text-sm"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      {t('downloadPLY')}
+                    </button>
+                    <button
+                      onClick={() => setPlyUrl(null)}
+                      className="px-4 py-2 border border-zinc-700 text-zinc-400 rounded-lg hover:bg-zinc-800 hover:text-zinc-200 transition-colors text-sm"
+                    >
+                      {t('hidePreview')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-zinc-800 rounded-lg p-8 text-center bg-zinc-900/30">
+                  <div className="w-14 h-14 mx-auto mb-4 bg-zinc-800 rounded-full flex items-center justify-center">
+                    <svg className="w-7 h-7 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-sm font-medium text-zinc-500 mb-1">{t('no3DModel')}</h4>
+                  <p className="text-xs text-zinc-600">{t('no3DModelDesc')}</p>
+                  <p className="text-xs text-zinc-700 mt-2">{t('previewWillAppear')}</p>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="bg-gray-50 p-4 rounded">
-            <h4 className="font-bold">3DGS Endpoint (Gradio)</h4>
-            <code className="text-sm block mt-2">POST /api/predict/gs_process</code>
-            <p className="text-sm text-gray-600 mt-1">
-              Input: Multiple image files via Gradio client
+        </div>
+
+        {/* TechDocs Card - spans 1 col on md, full on smaller */}
+        <div className="md:col-span-2 animate-fade-in">
+          <TechDocs />
+        </div>
+
+        {/* API Info Card - spans 2 cols on md */}
+        <div className="md:col-span-2 glass rounded-lg animate-fade-in">
+          <div className="p-5">
+            <h3 className="text-lg font-bold text-zinc-100 mb-4">{t('apiDocs')}</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+                <h4 className="font-mono text-sm font-bold text-blue-400 mb-2">SR3</h4>
+                <code className="text-xs text-zinc-400 block mb-2">POST /api/predict/sr_process</code>
+                <p className="text-xs text-zinc-500">
+                  <span className="text-zinc-400">{t('input')}:</span> Single image file
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  <span className="text-zinc-400">{t('output')}:</span> Enhanced image URL
+                </p>
+              </div>
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+                <h4 className="font-mono text-sm font-bold text-purple-400 mb-2">3DGS</h4>
+                <code className="text-xs text-zinc-400 block mb-2">POST /api/predict/gs_process</code>
+                <p className="text-xs text-zinc-500">
+                  <span className="text-zinc-400">{t('input')}:</span> Multiple image files
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  <span className="text-zinc-400">{t('output')}:</span> 3D model .ply URL
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-zinc-600 font-mono">
+              {t('apiDocsFooter')}
             </p>
           </div>
         </div>
-        <p className="mt-4 text-sm text-gray-500">
-          See <code>frontend/lib/api.ts</code> for the complete Gradio client implementation.
-        </p>
       </div>
     </div>
   );

@@ -2,18 +2,20 @@
 
 import { useState, useRef } from 'react';
 import { processSR3, APIError } from '@/lib/api';
+import { toast } from '@/hooks/useToast';
+import { ImageCompareSlider } from '@/components/ImageCompareSlider';
+import { useI18n } from '@/lib/i18n';
 
 interface SR3ComparisonProps {
   className?: string;
 }
 
 export default function SR3Comparison({ className = '' }: SR3ComparisonProps) {
+  const { t } = useI18n();
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [enhancedImageUrl, setEnhancedImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,32 +24,28 @@ export default function SR3Comparison({ className = '' }: SR3ComparisonProps) {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
+      toast.error(t('imageTypeError'));
       return;
     }
 
     // Validate file size (e.g., 10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      setError('Image size should be less than 10MB');
+      toast.error(t('imageSizeError'));
       return;
     }
 
     setOriginalImage(file);
     setOriginalImageUrl(URL.createObjectURL(file));
     setEnhancedImageUrl(null);
-    setError(null);
-    setSuccess(null);
   };
 
   const handleProcess = async () => {
     if (!originalImage) {
-      setError('Please upload an image first');
+      toast.error(t('pleaseUploadImage'));
       return;
     }
 
     setLoading(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       // Process image through SR3
@@ -57,17 +55,17 @@ export default function SR3Comparison({ className = '' }: SR3ComparisonProps) {
         const imageUrl = result.image_url;
         // URL is relative (proxied via Next.js rewrites), use directly
         setEnhancedImageUrl(imageUrl);
-        setSuccess(result.message || 'Image enhanced successfully');
+        toast.success(result.message || t('imageEnhanced'));
       } else {
         throw new Error(result.message || 'Unknown error');
       }
     } catch (err) {
       if (err instanceof APIError) {
-        setError(`API Error (${err.statusCode}): ${err.message}`);
+        toast.error(`API Error (${err.statusCode}): ${err.message}`);
       } else if (err instanceof Error) {
-        setError(`Error: ${err.message}`);
+        toast.error(`Error: ${err.message}`);
       } else {
-        setError('An unknown error occurred');
+        toast.error('An unknown error occurred');
       }
     } finally {
       setLoading(false);
@@ -78,39 +76,35 @@ export default function SR3Comparison({ className = '' }: SR3ComparisonProps) {
     setOriginalImage(null);
     setOriginalImageUrl(null);
     setEnhancedImageUrl(null);
-    setError(null);
-    setSuccess(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   return (
-    <div className={`border rounded-lg shadow bg-white ${className}`}>
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4">SR3 Super-Resolution Comparison</h2>
-        <p className="text-gray-600 mb-6">
-          Upload an image to see the difference before and after super-resolution enhancement.
-        </p>
+    <div className={`glass rounded-lg glow-blue animate-fade-in ${className}`}>
+      <div className="p-5">
+        <h2 className="text-lg font-bold text-zinc-100 mb-1">{t('sr3Title')}</h2>
+        <p className="text-sm text-zinc-400 mb-5">{t('sr3Desc')}</p>
 
         {/* Upload Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <label className="block font-medium">Upload Image</label>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <label className="block text-sm font-medium text-zinc-300">{t('uploadImage')}</label>
             {originalImage && (
               <button
                 onClick={handleReset}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                 type="button"
               >
-                Reset
+                {t('reset')}
               </button>
             )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+              <div className="border border-zinc-700 rounded-lg p-5 text-center hover:border-zinc-500 transition-colors bg-zinc-900/50">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -123,16 +117,16 @@ export default function SR3Comparison({ className = '' }: SR3ComparisonProps) {
                   htmlFor="sr3-upload"
                   className="cursor-pointer block"
                 >
-                  <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mx-auto w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center mb-3">
+                    <svg className="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
                   </div>
-                  <p className="text-gray-600">
-                    {originalImage ? originalImage.name : 'Click to upload image'}
+                  <p className="text-zinc-400 text-sm">
+                    {originalImage ? originalImage.name : t('uploadImageHint')}
                   </p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    PNG, JPG, WEBP up to 10MB
+                  <p className="text-xs text-zinc-600 mt-1">
+                    {t('uploadImageFormats')}
                   </p>
                 </label>
               </div>
@@ -142,111 +136,43 @@ export default function SR3Comparison({ className = '' }: SR3ComparisonProps) {
               <button
                 onClick={handleProcess}
                 disabled={loading || !originalImage}
-                className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed transition-all duration-200 whitespace-nowrap"
               >
                 {loading ? (
                   <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Processing...
+                    {t('processing')}
                   </span>
-                ) : 'Enhance with SR3'}
+                ) : t('enhanceWithSR3')}
               </button>
             </div>
           </div>
         </div>
 
         {/* Comparison Section */}
-        {(originalImageUrl || enhancedImageUrl) && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4">Comparison</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Original Image */}
-              <div className="border rounded-lg overflow-hidden">
-                <div className="bg-gray-50 p-3 border-b">
-                  <h4 className="font-medium text-gray-700">Original Image</h4>
-                  {originalImage && (
-                    <p className="text-sm text-gray-500">
-                      {originalImage.name} ({(originalImage.size / 1024).toFixed(1)} KB)
-                    </p>
-                  )}
-                </div>
-                <div className="p-4 flex items-center justify-center bg-gray-50 min-h-[300px]">
-                  {originalImageUrl ? (
-                    <img
-                      src={originalImageUrl}
-                      alt="Original"
-                      className="max-w-full max-h-[400px] object-contain rounded"
-                    />
-                  ) : (
-                    <div className="text-gray-400">No image uploaded</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Enhanced Image */}
-              <div className="border rounded-lg overflow-hidden">
-                <div className="bg-blue-50 p-3 border-b">
-                  <h4 className="font-medium text-blue-700">Enhanced Image (SR3 Output)</h4>
-                  <p className="text-sm text-blue-500">Super-resolution applied</p>
-                </div>
-                <div className="p-4 flex items-center justify-center bg-blue-50 min-h-[300px]">
-                  {enhancedImageUrl ? (
-                    <img
-                      src={enhancedImageUrl}
-                      alt="Enhanced"
-                      className="max-w-full max-h-[400px] object-contain rounded"
-                    />
-                  ) : (
-                    <div className="text-gray-400">
-                      {loading ? 'Processing...' : 'Click "Enhance with SR3" to see result'}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Status Messages */}
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <h4 className="font-medium text-red-800">Error</h4>
-                <p className="text-red-600 mt-1">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <div>
-                <h4 className="font-medium text-green-800">Success</h4>
-                <p className="text-green-600 mt-1">{success}</p>
-              </div>
-            </div>
+        {originalImageUrl && enhancedImageUrl && (
+          <div className="mb-6">
+            <ImageCompareSlider
+              before={originalImageUrl}
+              after={enhancedImageUrl}
+              beforeLabel={t('originalImage')}
+              afterLabel={t('enhancedImage')}
+              className="w-full"
+            />
           </div>
         )}
 
         {/* Info */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h4 className="font-medium text-gray-700 mb-2">How it works</h4>
-          <ul className="text-sm text-gray-600 space-y-1">
-            <li>• Upload an image (JPG, PNG, WEBP)</li>
-            <li>• Click "Enhance with SR3" to apply super-resolution</li>
-            <li>• Compare original vs enhanced images side-by-side</li>
-            <li>• The SR3 model increases image resolution while preserving details</li>
+        <div className="pt-4 border-t border-zinc-800">
+          <h4 className="text-sm font-medium text-zinc-400 mb-2">{t('sr3HowItWorksTitle')}</h4>
+          <ul className="text-xs text-zinc-500 space-y-1">
+            <li>• {t('sr3HowItWorks1')}</li>
+            <li>• {t('sr3HowItWorks2')}</li>
+            <li>• {t('sr3HowItWorks3')}</li>
+            <li>• {t('sr3HowItWorks4')}</li>
           </ul>
         </div>
       </div>

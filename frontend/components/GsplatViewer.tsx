@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { toast } from '@/hooks/useToast';
+import { SkeletonLoader } from '@/components/SkeletonLoader';
+import { useI18n } from '@/lib/i18n';
 
 interface GsplatViewerProps {
   plyUrl?: string;
@@ -15,6 +18,7 @@ export default function GsplatViewer({
   autoRotate = true,
   showControls = true,
 }: GsplatViewerProps) {
+  const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +99,9 @@ export default function GsplatViewer({
       } catch (err) {
         console.error('Failed to load gsplat:', err);
         if (mounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load 3D model');
+          const message = err instanceof Error ? err.message : 'Failed to load 3D model';
+          setError(message);
+          toast.error(message);
           setLoading(false);
         }
       }
@@ -127,22 +133,12 @@ export default function GsplatViewer({
 
   if (!plyUrl) {
     return (
-      <div className={`flex items-center justify-center bg-gray-50 rounded-lg ${className}`}>
-        <div className="text-center p-8">
-          <div className="w-12 h-12 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-700 mb-2">No 3D Model URL</h3>
-          <p className="text-gray-500">Provide a .ply file URL to visualize 3D Gaussian Splatting</p>
-        </div>
-      </div>
+      <SkeletonLoader className={className} lines={2} />
     );
   }
 
   return (
-    <div className={`relative rounded-lg overflow-hidden bg-gray-900 ${className}`}>
+    <div className={`relative rounded-lg overflow-hidden bg-zinc-900 ${className}`}>
       {/* Canvas */}
       <canvas
         ref={canvasRef}
@@ -152,60 +148,54 @@ export default function GsplatViewer({
 
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/80 backdrop-blur-sm">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 backdrop-blur-sm">
           <div className="w-12 h-12 mb-4">
             <div className="w-full h-full border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
           </div>
-          <h3 className="text-white font-medium mb-2">Loading 3D Model</h3>
-          <p className="text-gray-300 text-sm mb-4">Fetching {plyUrl.split('/').pop()}</p>
-          <div className="w-64 bg-gray-700 rounded-full h-2">
+          <h3 className="text-zinc-100 font-medium mb-2">{t('loading3DModel')}</h3>
+          <p className="text-zinc-400 text-sm mb-4">{t('fetching')} {plyUrl.split('/').pop()}</p>
+          <div className="w-64 bg-zinc-700 rounded-full h-2">
             <div
               className="bg-blue-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-gray-300 text-sm mt-2">{progress}%</p>
+          <p className="text-zinc-400 text-sm mt-2">{progress}%</p>
         </div>
       )}
 
       {/* Error overlay */}
       {error && !loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/80 backdrop-blur-sm">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 backdrop-blur-sm">
           <div className="w-12 h-12 mx-auto mb-4 bg-red-500/20 rounded-full flex items-center justify-center">
             <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-white font-medium mb-2">Failed to Load 3D Model</h3>
-          <p className="text-gray-300 text-sm text-center max-w-md mb-4">{error}</p>
-          <button
-            onClick={() => setError(null)}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-          >
-            Dismiss
-          </button>
+          <h3 className="text-zinc-100 font-medium mb-2">{t('error')}</h3>
+          <p className="text-zinc-400 text-sm text-center max-w-md mb-4">{error}</p>
         </div>
       )}
 
       {/* Controls info */}
       {isLoaded && showControls && (
-        <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs rounded-lg p-3 backdrop-blur-sm">
+        <div className="absolute bottom-4 left-4 bg-zinc-900/60 text-zinc-200 text-xs rounded-lg p-3 backdrop-blur-sm border border-zinc-700">
           <div className="flex items-center space-x-2 mb-1">
             <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span className="font-medium">Controls:</span>
+            <span className="font-medium">{t('controls')}:</span>
           </div>
           <div className="space-y-1">
             <div className="flex items-center">
-              <span className="text-gray-300 w-20">Rotate:</span>
-              <span className="font-mono">Drag</span>
+              <span className="text-zinc-400 w-20">{t('rotate')}:</span>
+              <span className="font-mono">{t('drag')}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-gray-300 w-20">Zoom:</span>
-              <span className="font-mono">Scroll</span>
+              <span className="text-zinc-400 w-20">{t('zoom')}:</span>
+              <span className="font-mono">{t('scroll')}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-gray-300 w-20">Pan:</span>
-              <span className="font-mono">Right-click + Drag</span>
+              <span className="text-zinc-400 w-20">{t('pan')}:</span>
+              <span className="font-mono">{t('rightClickDrag')}</span>
             </div>
           </div>
         </div>
@@ -213,10 +203,10 @@ export default function GsplatViewer({
 
       {/* Auto-rotation indicator */}
       {isLoaded && autoRotate && !showControls && (
-        <div className="absolute top-4 right-4 bg-black/60 text-white text-xs rounded-lg p-2 backdrop-blur-sm">
+        <div className="absolute top-4 right-4 bg-zinc-900/60 text-zinc-200 text-xs rounded-lg p-2 backdrop-blur-sm border border-zinc-700">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-            <span>Auto-rotation: ON</span>
+            <span>{t('autoRotationOn')}</span>
           </div>
         </div>
       )}

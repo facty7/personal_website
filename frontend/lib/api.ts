@@ -19,6 +19,21 @@ export interface SR3Response {
   filename?: string;
 }
 
+export interface TaskStatusResponse {
+  task_id: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  queue_position?: number;
+  image_url?: string;
+  ply_url?: string;
+  error?: string;
+  message?: string;
+}
+
+export interface QueueStatusResponse {
+  queue_length: number;
+  active_task: string | null;
+}
+
 // 3DGS API types
 export interface ThreeDGSRequest {
   images: File[];
@@ -61,90 +76,197 @@ export class APIError extends Error {
 
 /**
  * Process an image through SR3 super-resolution model.
+ * Submits to backend queue and polls until completion.
+ * Reports progress via onProgress callback.
  */
 export async function processSR3(
   file: File,
-  onProgress?: (progressEvent: AxiosProgressEvent) => void
+  onProgress?: (progressEvent: { phase: string; position?: number }) => void
 ): Promise<SR3Response> {
   const formData = new FormData();
   formData.append('file', file);
 
-  try {
-    // Relative path - proxied by Next.js rewrites
-    const response = await axios.post('/api/predict/sr_process', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: onProgress,
-    });
+  // Step 1: Submit to queue
+  onProgress?.({ phase: 'uploading' });
+  const response = await axios.post('/api/predict/sr_process', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    timeout: 30000, // 30s timeout for upload only
+  });
 
-    const data = response.data;
-    if (data.status === 'error') {
-      throw new Error(data.message);
-    }
+  const submitData = response.data;
+  if (submitData.status === 'error') {
+    throw new Error(submitData.message);
+  }
 
+  const taskId = submitData.task_id;
+
+  // Step 2: Poll until completed
+  onProgress?.({ phase: 'queued', position: submitData.queue_position });
+  const result = await pollTaskStatus(taskId, onProgress);
+
+  if (result.status === 'completed' && result.image_url) {
     return {
       status: 'success',
-      image_url: data.image_url,
-      message: data.message || 'Image enhanced successfully',
+      image_url: result.image_url,
+      message: result.message || 'Super-resolution completed',
     };
-  } catch (error: any) {
-    console.error('SR3 processing error:', error);
-    if (axios.isAxiosError(error)) {
-      if (error.response) {
-        throw new APIError(error.response.status, error.response.data || error.message);
-      } else {
-        throw new Error(`Network error: ${error.message}`);
-      }
-    }
-    throw error;
+  } else if (result.status === 'failed') {
+    throw new Error(result.error || 'Processing failed');
+  } else {
+    throw new Error('Unexpected task state');
   }
 }
 
 /**
- * Submit 3DGS processing task.
+ * Poll task status until completion or failure.
+ */
+async function pollTaskStatus(
+  taskId: string,
+  onProgress?: (progressEvent: { phase: string; position?: number }) => void
+): Promise<TaskStatusResponse> {
+  const maxAttempts = 600; // 10 minutes max
+  const interval = 1000; // 1 second
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, interval));
+    attempts++;
+
+    const response = await axios.get(`/api/task/status/${taskId}`);
+    const data = response.data;
+
+    if (data.status === 'completed') {
+      return data;
+    } else if (data.status === 'failed') {
+      return data;
+    } else if (data.status === 'processing') {
+      onProgress?.({ phase: 'processing' });
+    } else if (data.status === 'queued') {
+      onProgress?.({ phase: 'queued', position: data.queue_position });
+    }
+  }
+
+  throw new Error('Processing timed out after 10 minutes');
+}
+
+/**
+ * Submit 3DGS training task.
+ * Submits to backend queue and polls until completion.
  */
 export async function submit3DGSTask(
   files: File[],
-  onProgress?: (progressEvent: AxiosProgressEvent) => void
+  onProgress?: (progressEvent: { phase: string; position?: number }) => void
 ): Promise<ThreeDGSSubmitResponse> {
   const formData = new FormData();
   files.forEach((file) => {
     formData.append('files', file);
   });
 
-  try {
-    const response = await axios.post('/api/predict/gs_process', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: onProgress,
-    });
+  // Step 1: Submit to queue
+  onProgress?.({ phase: 'uploading' });
+  const response = await axios.post('/api/predict/gs_process', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    timeout: 60000, // 1 minute for upload
+  });
 
-    const data = response.data;
-    if (data.status === 'error') {
-      throw new Error(data.message);
-    }
+  const submitData = response.data;
+  if (submitData.status === 'error') {
+    throw new Error(submitData.message);
+  }
 
-    const ply_url = data.ply_url;
+  const taskId = submitData.task_id;
 
+  // Step 2: Poll until completed (3DGS takes much longer)
+  onProgress?.({ phase: 'queued', position: submitData.queue_position });
+  const result = await pollTaskStatusWithLongTimeout(taskId, onProgress);
+
+  if (result.status === 'completed' && result.ply_url) {
     return {
-      status: ply_url ? 'queued' : 'error',
-      message: data.message || (ply_url ? '3DGS processing started' : 'Processing failed'),
-      ply_url: ply_url,
-      download_url: ply_url,
+      status: 'queued',
+      message: result.message || '3DGS training completed',
+      ply_url: result.ply_url,
+      download_url: result.ply_url,
     };
-  } catch (error: any) {
-    console.error('3DGS processing error:', error);
-    if (axios.isAxiosError(error)) {
-      if (error.response) {
-        throw new APIError(error.response.status, error.response.data || error.message);
-      } else {
-        throw new Error(`Network error: ${error.message}`);
+  } else if (result.status === 'failed') {
+    throw new Error(result.error || '3DGS processing failed');
+  } else {
+    throw new Error('Unexpected task state');
+  }
+}
+
+/**
+ * Poll task status with longer timeout for 3DGS.
+ */
+async function pollTaskStatusWithLongTimeout(
+  taskId: string,
+  onProgress?: (progressEvent: { phase: string; position?: number }) => void
+): Promise<TaskStatusResponse> {
+  const maxAttempts = 3600; // 1 hour max for 3DGS
+  const interval = 1000; // 1 second
+  let attempts = 0;
+  let lastReportedPhase = '';
+
+  while (attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, interval));
+    attempts++;
+
+    // Report progress every 5 seconds
+    if (attempts % 5 === 0) {
+      const response = await axios.get(`/api/task/status/${taskId}`);
+      const data = response.data;
+
+      if (data.status === 'completed') {
+        return data;
+      } else if (data.status === 'failed') {
+        return data;
+      } else if (data.status === 'processing') {
+        const elapsed = Math.floor(attempts / 5);
+        const phase = `processing (${elapsed}s)`;
+        if (phase !== lastReportedPhase) {
+          onProgress?.({ phase: 'processing', position: elapsed });
+          lastReportedPhase = phase;
+        }
+      } else if (data.status === 'queued') {
+        onProgress?.({ phase: 'queued', position: data.queue_position });
       }
     }
-    throw error;
   }
+
+  throw new Error('3DGS processing timed out after 1 hour');
+}
+
+/**
+ * Download a processed file from the backend.
+ */
+export async function downloadProcessedFile(
+  url: string,
+  filename?: string
+): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.statusText}`);
+  }
+  const blob = await response.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename || url.split('/').pop() || 'download';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(blobUrl);
+}
+
+/**
+ * Check current queue status.
+ */
+export async function getQueueStatus(): Promise<QueueStatusResponse> {
+  const response = await axios.get('/api/queue/status');
+  return response.data;
 }
 
 /**

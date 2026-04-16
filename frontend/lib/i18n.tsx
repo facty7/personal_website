@@ -78,6 +78,17 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
     imageSizeError: 'Image size should be less than 10MB',
     imageEnhanced: 'Image enhanced successfully',
 
+    // Queue & Progress
+    queued: 'Queued',
+    inQueue: 'In Queue',
+    phaseUploading: 'Uploading...',
+    phaseQueued: (...args: unknown[]) => `Queued (#${args[0] as number})`,
+    phaseProcessing: 'Processing...',
+    phaseDownloading: 'Downloading...',
+    downloadImage: 'Download Image',
+    downloadModel: 'Download Model',
+    downloadFailed: 'Download failed',
+
     // Tech Docs (legacy)
     techDocsTitle: 'Technical Documentation',
     sr3DiffusionTitle: 'SR3 Diffusion Model',
@@ -361,6 +372,17 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
     imageTypeError: '请上传图像文件',
     imageSizeError: '图像大小应小于 10MB',
     imageEnhanced: '图像增强成功',
+
+    // Queue & Progress
+    queued: '排队中',
+    inQueue: '排队中',
+    phaseUploading: '上传中...',
+    phaseQueued: (...args: unknown[]) => `已排队（第 ${args[0] as number} 位）`,
+    phaseProcessing: '处理中...',
+    phaseDownloading: '下载中...',
+    downloadImage: '下载图像',
+    downloadModel: '下载模型',
+    downloadFailed: '下载失败',
 
     // Tech Docs (legacy)
     techDocsTitle: '技术文档',

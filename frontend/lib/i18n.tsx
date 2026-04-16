@@ -105,7 +105,7 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
   zh: {
     // Navigation
     navWorkspace: '工作台',
-    navDocs: '底层推导',
+    navDocs: '算法原理',
     langSwitch: '切换语言',
 
     // Layout

@@ -1,17 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { KaTeXFormula } from '@/components/KaTeXFormula';
 import { useI18n } from '@/lib/i18n';
-
-const sectionVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' as const },
-  },
-};
 
 function Callout({ children, label }: { children: React.ReactNode; label: string }) {
   return (
@@ -39,7 +29,6 @@ function FormulaBlock({ formula, label, description }: { formula: string; label:
   );
 }
 
-// 纯 CSS 绘制的高级论文架构图
 function DiffusionDiagram() {
   return (
     <div className="my-8 p-6 rounded-xl border border-zinc-800/50 bg-zinc-900/10 flex flex-col items-center justify-center gap-4 overflow-hidden">
@@ -65,7 +54,7 @@ function DiffusionDiagram() {
         <div className="w-16 h-16 rounded border border-dotted border-zinc-700 bg-zinc-900 flex items-center justify-center text-zinc-600">x_T</div>
       </div>
       <div className="mt-2 text-[10px] text-emerald-500/70 bg-emerald-500/10 px-3 py-1 rounded-full">
-        Reverse Process: p_θ(x_{t-1} | x_t, y) via UNet
+        Reverse Process: p_θ(x_{"{t-1}"} | x_t, y) via UNet
       </div>
     </div>
   );
@@ -79,23 +68,18 @@ export default function DocsPage() {
   const { t, locale } = useI18n();
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-      className="mx-auto w-full max-w-[1000px] px-4 py-12 sm:px-6 lg:px-8 font-sans"
-    >
-      <motion.div variants={sectionVariants} className="mb-16 text-center">
+    <div className="mx-auto w-full max-w-[1000px] px-4 py-12 sm:px-6 lg:px-8 font-sans">
+      <div className="mb-16 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-100 mb-4">
           Core Algorithms & Derivations
         </h1>
         <p className="text-sm text-zinc-500 max-w-2xl mx-auto leading-relaxed">
           Detailed mathematical foundations and implementation heuristics for Conditional Diffusion Models (SR3) and 3D Gaussian Splatting.
         </p>
-      </motion.div>
+      </div>
 
       {/* SR3 Section */}
-      <motion.section id="sr3" variants={sectionVariants} className="mb-20">
+      <section id="sr3" className="mb-20">
         <div className="mb-10">
           <h2 className="text-xl font-semibold text-zinc-100 mb-2 border-l-2 border-blue-500 pl-3">
             1. SR3: Conditional Diffusion for Super-Resolution
@@ -119,7 +103,7 @@ export default function DocsPage() {
           />
 
           <p className="text-sm text-zinc-400 leading-relaxed">
-            A crucial property of this process is that we can sample $x_t$ at any arbitrary timestep $t$ directly from $x_0$ using the reparameterization trick. Let $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$:
+            A crucial property of this process is that we can sample $x_t$ at any arbitrary timestep $t$ directly from $x_0$ using the reparameterization trick. Let $\alpha_t = 1 - \beta_t$ and $\bar{'{'}\alpha{'}'}_t = \prod_{'{'}s=1{'}'}^t \alpha_s$:
           </p>
 
           <FormulaBlock
@@ -132,7 +116,7 @@ export default function DocsPage() {
 
           <h3 className="text-base font-medium text-zinc-200">1.2 The Reverse Process (Noise to Data)</h3>
           <p className="text-sm text-zinc-400 leading-relaxed">
-            The true reverse transitions $q(x_{t-1} | x_t)$ are intractable. However, when conditioned on $x_0$, the posterior becomes tractable. SR3 injects the low-resolution image $y$ as a condition to approximate the reverse process using a neural network $p_\theta$:
+            The true reverse transitions $q(x_{'{'}t-1{'}'} | x_t)$ are intractable. However, when conditioned on $x_0$, the posterior becomes tractable. SR3 injects the low-resolution image $y$ as a condition to approximate the reverse process using a neural network $p_\theta$:
           </p>
 
           <FormulaBlock
@@ -153,9 +137,60 @@ export default function DocsPage() {
             In SR3, unlike standard unconditional generation, the low-resolution condition $y$ is concatenated channel-wise with $x_t$ before being fed into the UNet. We observed that employing a noise conditioning augmentation (adding slight noise to $y$ during training) significantly reduces artifacts and domain shift during inference.
           </Callout>
         </div>
-      </motion.section>
+      </section>
 
-      {/* 3DGS Section continues similarly... */}
-    </motion.div>
+      {/* 3DGS Section */}
+      <section id="gs" className="mb-20">
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold text-zinc-100 mb-2 border-l-2 border-purple-500 pl-3">
+            2. 3D Gaussian Splatting (3DGS) Scene Representation
+          </h2>
+          <p className="text-sm text-zinc-400 pl-3.5">
+            Explicit anisotropic 3D Gaussian representation with tile-based rasterization for real-time rendering.
+          </p>
+        </div>
+
+        <div className="prose prose-invert prose-zinc max-w-none space-y-6">
+          <h3 className="text-base font-medium text-zinc-200">2.1 Anisotropic 3D Gaussian</h3>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            Traditional NeRF relies on implicit neural networks for volume rendering, which is computationally expensive. 3DGS innovatively uses anisotropic 3D Gaussians for explicit representation. For any point $x$, the probability density of a Gaussian body is defined as:
+          </p>
+
+          <FormulaBlock
+            label="Gaussian Density"
+            formula="G(x) = \exp\!\left(-\frac{1}{2}(x - \mu)^{\top} \Sigma^{-1} (x - \mu)\right)"
+          />
+
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            To ensure $\Sigma$ remains positive semi-definite during gradient descent optimization, 3DGS decomposes the covariance matrix into a scaling matrix $S$ and a rotation matrix $R$ (represented as a quaternion):
+          </p>
+
+          <FormulaBlock
+            label="Covariance Decomposition"
+            formula="\Sigma = R S S^{\top} R^{\top}"
+          />
+
+          <Divider />
+
+          <h3 className="text-base font-medium text-zinc-200">2.2 Alpha Blending (Rendering Equation)</h3>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            When rendering from a given camera pose, 3D Gaussians are projected onto the 2D image plane, forming 2D covariance matrices $\Sigma'$. The color $C$ along a ray is computed via front-to-back alpha blending:
+          </p>
+
+          <FormulaBlock
+            label="Alpha Blending"
+            formula="C = \sum_{i \in \mathcal{N}} c_i \, \alpha_i \prod_{j=1}^{i-1} (1 - \alpha_j)"
+          />
+
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            Here $c_i$ is the view-dependent color computed via Spherical Harmonics (SH), and $\alpha_i$ is the weight obtained by multiplying the 2D Gaussian probability density with the opacity parameter.
+          </p>
+
+          <Callout label="Engineering Insight">
+            3DGS consumes significant VRAM during training. When building this platform, optimizing the C++ CUDA operator and frontend WebGL memory communication pipeline was critical to ensure fast .ply point cloud parsing in the browser, achieving an extremely high frame rate experience.
+          </Callout>
+        </div>
+      </section>
+    </div>
   );
 }

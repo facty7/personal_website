@@ -3,6 +3,11 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
+        protocol: 'https',
+        hostname: 'api.jianglixin.online',
+        pathname: '/**',
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
         port: '7860',
@@ -14,7 +19,8 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7860'}/api/:path*`,
+        // 确保环境变量优先级最高，默认指向 CF Tunnel
+        destination: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.jianglixin.online'}/api/:path*`,
       },
     ];
   },

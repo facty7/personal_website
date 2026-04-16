@@ -3,27 +3,108 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-zinc-950 text-zinc-100 antialiased;
   }
 }
 
 @layer components {
+  /* Frosted glass card */
   .glass {
     @apply bg-zinc-900/50 backdrop-blur-md border border-zinc-800;
   }
+
+  /* Subtle hover glow */
   .glass-hover {
-    @apply hover:border-zinc-600 hover:shadow-[0_0_15px_rgba(59,130,246,0.15)] transition-all duration-300;
+    @apply hover:border-zinc-600 hover:shadow-[0_0_20px_rgba(255,255,255,0.03)] transition-all duration-300;
   }
-  .glow-blue {
-    @apply hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-shadow duration-300;
+
+  /* Cursor-following radial glow on hover */
+  .glow-follow {
+    @apply relative border border-zinc-800 rounded-xl overflow-hidden transition-colors duration-200;
+    --mouse-x: 50%;
+    --mouse-y: 50%;
   }
-  .glow-purple {
-    @apply hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-shadow duration-300;
+  .glow-follow::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background: radial-gradient(
+      300px circle at var(--mouse-x) var(--mouse-y),
+      rgba(255, 255, 255, 0.06),
+      transparent 60%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-follow:hover::before {
+    opacity: 1;
+  }
+  .glow-follow > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Shimmer loading animation */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.04) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
   }
 }
 
-@keyframes border-beam {
-  0% { offset-distance: 0%; }
-  100% { offset-distance: 100%; }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* KaTeX overrides */
+.katex-display {
+  margin: 1rem 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.katex {
+  color: inherit !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(63 63 70 / 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(82 82 91 / 0.7);
 }

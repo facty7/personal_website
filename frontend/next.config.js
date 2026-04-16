@@ -18,6 +18,15 @@ const nextConfig = {
       },
     ];
   },
+  pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 };
 
-module.exports = nextConfig;
+const withMDX = require('@next/mdx')({
+  extension: /\.mdx?$/,
+  options: {
+    remarkPlugins: [require('remark-math')],
+    rehypePlugins: [require('rehype-katex')],
+  },
+});
+
+module.exports = withMDX(nextConfig);

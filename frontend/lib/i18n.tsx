@@ -6,9 +6,22 @@ export type Locale = 'zh' | 'en';
 
 const translations: Record<Locale, Record<string, string | ((...args: unknown[]) => string)>> = {
   en: {
+    // Navigation
+    navWorkspace: 'Workspace',
+    navDocs: 'Research & Docs',
+    langSwitch: 'Toggle language',
+
     // Layout
     siteTitle: 'SR3 & 3DGS Processing Platform',
     siteSubtitle: 'Vercel Frontend + Hugging Face Spaces Backend',
+
+    // Workspace
+    workspaceTitle: 'Processing Workspace',
+    workspaceDescription: 'Upload images for AI-powered super-resolution and 3D Gaussian Splatting reconstruction.',
+
+    // Docs
+    docsTitle: 'Research & Derivation Notes',
+    docsSubtitle: 'Core algorithm mathematical derivations and implementation details for SR3 and 3DGS.',
 
     // Hero
     heroTitle: 'Super-Resolution & 3D Reconstruction',
@@ -18,11 +31,11 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
     sr3Title: 'SR3 Super-Resolution',
     sr3Desc: 'Enhance image resolution with deep learning',
     uploadImage: 'Upload Image',
-    uploadImageHint: 'Click to upload image',
+    uploadImageHint: 'Click or drag to upload',
     uploadImageFormats: 'PNG, JPG, WEBP up to 10MB',
     enhanceWithSR3: 'Enhance with SR3',
-    originalImage: 'Original Image',
-    enhancedImage: 'Enhanced Image (SR3 Output)',
+    originalImage: 'Original',
+    enhancedImage: 'SR3 Output',
     srSuperResolutionApplied: 'Super-resolution applied',
     sr3HowItWorksTitle: 'How it works',
     sr3HowItWorks1: 'Upload an image (JPG, PNG, WEBP)',
@@ -32,13 +45,13 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
 
     // 3DGS
     gsTitle: '3DGS Reconstruction',
-    gsDesc: 'Generate 3D models from multi-view images',
+    gsDesc: 'Generate 3D models from multi-view images via Gaussian Splatting.',
     selectImages: 'Select Images (Multiple)',
     selectedImages: (...args: unknown[]) => `Selected ${args[0] as number} image(s)`,
     processWith3DGS: 'Process with 3DGS',
     no3DModel: 'No 3D Model Loaded',
-    no3DModelDesc: 'Process images with 3DGS to generate and preview a 3D Gaussian Splatting model.',
-    previewWillAppear: 'The preview will appear here once processing is complete.',
+    no3DModelDesc: 'Upload multi-view images and process to generate a 3D Gaussian Splatting model.',
+    previewWillAppear: 'Preview will appear here after processing.',
     downloadPLY: 'Download .ply',
     hidePreview: 'Hide Preview',
     controls: 'Controls',
@@ -65,7 +78,7 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
     imageSizeError: 'Image size should be less than 10MB',
     imageEnhanced: 'Image enhanced successfully',
 
-    // Tech Docs
+    // Tech Docs (legacy)
     techDocsTitle: 'Technical Documentation',
     sr3DiffusionTitle: 'SR3 Diffusion Model',
     sr3ForwardProcess: 'Forward Process',
@@ -90,9 +103,22 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
     output: 'Output',
   },
   zh: {
+    // Navigation
+    navWorkspace: '工作台',
+    navDocs: '底层推导',
+    langSwitch: '切换语言',
+
     // Layout
     siteTitle: 'SR3 & 3DGS 处理平台',
     siteSubtitle: 'Vercel 前端 + Hugging Face Spaces 后端',
+
+    // Workspace
+    workspaceTitle: '处理工作台',
+    workspaceDescription: '上传图片进行 AI 超分辨率增强和 3D 高斯溅射场景重建。',
+
+    // Docs
+    docsTitle: '核心算法推导',
+    docsSubtitle: 'SR3 条件扩散模型与 3DGS 高斯溅射的数学推导与实现细节。',
 
     // Hero
     heroTitle: '超分辨率与三维重建',
@@ -100,30 +126,30 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
 
     // SR3
     sr3Title: 'SR3 超分辨率',
-    sr3Desc: '使用深度学习提升图像分辨率',
+    sr3Desc: '使用条件扩散模型提升图像分辨率',
     uploadImage: '上传图片',
-    uploadImageHint: '点击上传图片',
+    uploadImageHint: '点击或拖拽上传',
     uploadImageFormats: 'PNG、JPG、WEBP，最大 10MB',
-    enhanceWithSR3: '使用 SR3 增强',
+    enhanceWithSR3: 'SR3 增强',
     originalImage: '原始图像',
-    enhancedImage: '增强图像（SR3 输出）',
+    enhancedImage: 'SR3 输出',
     srSuperResolutionApplied: '已应用超分辨率',
     sr3HowItWorksTitle: '工作原理',
     sr3HowItWorks1: '上传图像（JPG、PNG、WEBP）',
-    sr3HowItWorks2: '点击"使用 SR3 增强"应用超分辨率',
+    sr3HowItWorks2: '点击"SR3 增强"应用超分辨率',
     sr3HowItWorks3: '并排对比原始与增强图像',
     sr3HowItWorks4: 'SR3 模型在保留细节的同时提高图像分辨率',
 
     // 3DGS
     gsTitle: '3DGS 三维重建',
-    gsDesc: '从多视角图像生成 3D 模型',
+    gsDesc: '从多视角图像通过高斯溅射生成 3D 模型。',
     selectImages: '选择图像（多选）',
     selectedImages: (...args: unknown[]) => `已选择 ${args[0] as number} 张图像`,
-    processWith3DGS: '使用 3DGS 处理',
+    processWith3DGS: '3DGS 处理',
     no3DModel: '未加载 3D 模型',
-    no3DModelDesc: '使用 3DGS 处理图像以生成并预览 3D 高斯溅射模型。',
-    previewWillAppear: '处理完成后将在此处显示预览。',
-    downloadPLY: '下载 .ply 文件',
+    no3DModelDesc: '上传多视角图像并处理以生成 3D 高斯溅射模型。',
+    previewWillAppear: '处理完成后将在此显示预览。',
+    downloadPLY: '下载 .ply',
     hidePreview: '隐藏预览',
     controls: '控制',
     rotate: '旋转',
@@ -149,7 +175,7 @@ const translations: Record<Locale, Record<string, string | ((...args: unknown[])
     imageSizeError: '图像大小应小于 10MB',
     imageEnhanced: '图像增强成功',
 
-    // Tech Docs
+    // Tech Docs (legacy)
     techDocsTitle: '技术文档',
     sr3DiffusionTitle: 'SR3 扩散模型',
     sr3ForwardProcess: '前向过程',

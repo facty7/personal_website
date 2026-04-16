@@ -8,13 +8,10 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'monospace'],
       },
       keyframes: {
-        'border-beam': {
-          '0%': { 'offset-distance': '0%' },
-          '100%': { 'offset-distance': '100%' },
-        },
         shimmer: {
           '0%': { 'background-position': '-200% 0' },
           '100%': { 'background-position': '200% 0' },
@@ -23,16 +20,15 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        'slide-in-right': {
-          '0%': { transform: 'translateX(100%)' },
-          '100%': { transform: 'translateX(0)' },
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
       animation: {
-        'border-beam': 'border-beam 4s linear infinite',
         shimmer: 'shimmer 2s infinite linear',
-        'fade-in': 'fade-in 0.3s ease-out',
-        'slide-in-right': 'slide-in-right 0.3s ease-out',
+        'fade-in': 'fade-in 0.4s ease-out',
+        'slide-up': 'slide-up 0.5s ease-out',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -42,4 +38,4 @@ module.exports = {
     },
   },
   plugins: [],
-}
+};

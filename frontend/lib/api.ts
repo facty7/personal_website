@@ -92,7 +92,7 @@ export async function processSR3(
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-    timeout: 30000, // 30s timeout for upload only
+    timeout: 60000, // 60s timeout for upload
   });
 
   const submitData = response.data;
@@ -115,7 +115,7 @@ export async function processSR3(
   } else if (result.status === 'failed') {
     throw new Error(result.error || 'Processing failed');
   } else {
-    throw new Error('Unexpected task state');
+    throw new Error(`Unexpected task state: ${result.status}`);
   }
 }
 
@@ -134,7 +134,10 @@ async function pollTaskStatus(
     await new Promise(resolve => setTimeout(resolve, interval));
     attempts++;
 
-    const response = await axios.get(`/api/task/status/${taskId}`);
+    const response = await axios.get(`/api/task/status/${taskId}`, {
+      timeout: 10000,
+      params: { _t: Date.now() }, // bust browser/proxy cache
+    });
     const data = response.data;
 
     if (data.status === 'completed') {
@@ -216,7 +219,9 @@ async function pollTaskStatusWithLongTimeout(
 
     // Report progress every 5 seconds
     if (attempts % 5 === 0) {
-      const response = await axios.get(`/api/task/status/${taskId}`);
+      const response = await axios.get(`/api/task/status/${taskId}`, {
+        timeout: 10000,
+      });
       const data = response.data;
 
       if (data.status === 'completed') {

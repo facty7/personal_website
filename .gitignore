@@ -2,6 +2,8 @@ node_modules/
 .next/
 .env
 .env.local
-backend/__pycache__/
-backend/outputs/
+.vercel/
+collected_responses/
+**/collected_responses/
+*.log
 *.pyc
